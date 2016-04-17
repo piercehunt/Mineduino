@@ -2,6 +2,7 @@
 var mqtt = require('sc-mqtt'),
   spawn = require('spawn'),
   utils = require('utils'),
+  entities = require('entities'),
   foreach = require('utils').foreach,
   client = mqtt.client(),
   JavaString = java.lang.String,
@@ -10,43 +11,118 @@ var mqtt = require('sc-mqtt'),
 client.connect();
 client.subscribe('arduino1');
 
+var colorSensorSub = [
+  {
+    player: "Chumbeee",
+    color: { r: 136, g:20, b: 45 },
+    spawn: "SHEEP",
+    spawn_color: "8",
+    last: false,
+    tag: "sheep"
+  },
+  {
+    player: "Nurdy",
+    color: { r: 136, g:20, b: 45 },
+    spawn: "SHEEP",
+    spawn_color: "8",
+    last: false,
+    tag: "sheep"
+  },
+  {
+    player: "Nurdy",
+    color: { r: 83, g:75, b: 35 },
+    spawn: "SQUID",
+    last: false,
+    tag: "SQUID"
+  }
+];
+
+var delta = 10;
+
+// 1. Chumbee is listening for Red to spawn sheep near his location
+// 2. When Red occurs, spawn sheep near all players
+// 3, Register Chumbee with Red and Spawn Sheep so that when red is shown it will cause spawn
+
 client.onMessageArrived( function(topic,message){
-    var msgText = '' + new JavaString(message.payload);
-    if (topic == 'arduino1'){
+  var msgText = '' + new JavaString(message.payload);
+  if (topic != 'arduino1'){
+    return;
+  }
 
-      // console.log(msgText);
+  if(colorSensorSub.length <= 0) {
+    // Nobody wants colorsensor stuff.
+    return;
+  }
 
-      parseColors(msgText, function(r,g,b) {
-        console.log(r);
-        console.log(g);
-        console.log(b);
+  // console.log(msgText);
 
-        if(r > 75 && !last){
-          last = true;
-          // get player location
-          var player = utils.player("Chumbeee");
-          if(player) {
-            var location = player.location;
-            // location.setZ(location.getZ() + 70);
-            spawn("SHEEP", location);
-            console.log("PIG!");
+  try {
+
+    parseColors(msgText, function(r,g,b) {
+      console.log(r);
+      console.log(g);
+      console.log(b);
+
+      // check each subscriber to this sensor
+      for(x=0;x < colorSensorSub.length; x++){
+          var sub = colorSensorSub[x];
+          // Check to see if the subscriber's colors match
+          if( r > sub.color.r -delta && r < sub.color.r +delta &&
+              g > sub.color.g -delta && g < sub.color.g +delta &&
+              b > sub.color.b -delta && b < sub.color.b +delta) {
+
+                // if last sensor reading was same as this one
+                if(sub.last) {
+                  // do nothing...
+                  continue;
+                }
+
+                // Find player in game
+                var player = utils.player(sub.player);
+                if(sub.spawn) {
+                  if(player) {
+                    var location = player.location;
+                    // location.setZ(location.getZ() + 70);
+                    //spawnEntity(sub.spawn, location, sub.spawn_color);
+                    spawn(sub.spawn, location);
+                    console.log(sub.player + ":" + sub.spawn + "!");
+                  }
+                }
+
+                // flag this subscriber so we dont duplicate this action.
+                sub.last = sub.tag;
           }
-        }
-        else {
-          last = false;
-        }
-        // do something based upon r,g,b
-      });
-        /*
-          change the time in each of the server's worlds.
-          Day becomes night, night becomes day.
-         */
-        //foreach( server.worlds, function(world){
-        //    var time = world.time + 12000; // adds 1/2 day to time
-        //    world.time = time;
-        //});
-    }
+          else {
+            sub.last = false;
+          }
+      }
+    });
+  }
+  catch (error){
+    // Eat any errors
+    console.log("Frodo: ERROR!");
+    console.log(error);
+  }
 });
+
+function spawnEntity(entity, location, color) {
+  var entityTypeFn, entityType;
+  if (typeof entity === 'string'){
+    entityTypeFn = entities[entity.toLowerCase()];
+    entityType = entityTypeFn();
+  }
+
+  var Canary = Packages.net.canarymod.Canary;
+  var cmDyeColor = Packages.net.canarymod.api.DyeColor;
+  var entityFactory = Canary.factory().entityFactory;
+  var cmEntityType = Packages.net.canarymod.api.entity.EntityType;
+
+  var spawned = entityFactory.newEntity(entityType, location);
+  if(entity == "SHEEP"){
+    spawned.setColor(cmDyeColor.ORANGE); // TODO: use color to drive this color
+  }
+  spawned.spawn();
+}
 
 function parseColors(colors, action) {
   var r=0,g=0,b=0;
