@@ -28,7 +28,7 @@ client.onMessageArrived( function(topic,message){
           if(player) {
             var location = player.location;
             // location.setZ(location.getZ() + 70);
-            spawn("PIG", location);
+            spawn("SHEEP", location);
             console.log("PIG!");
           }
         }
