@@ -33,4 +33,4 @@ tab "/usr/local/sbin/mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf"
 #mosquitto_sub -t arduino1
 tab "mosquitto_sub -t arduino1"
 
-open ~/Documents/CanaryMod/ColorPal-with-LED2/ColorPal-with-LED2.ino
+open ./ColorPal-with-LED2/ColorPal-with-LED2.ino
