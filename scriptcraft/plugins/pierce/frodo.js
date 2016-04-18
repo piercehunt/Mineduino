@@ -3,6 +3,8 @@ var mqtt = require('sc-mqtt'),
   spawn = require('spawn'),
   utils = require('utils'),
   entities = require('entities'),
+  blocks = require('blocks'),
+  property = require('blockhelper').property,
   foreach = require('utils').foreach,
   client = mqtt.client(),
   JavaString = java.lang.String,
@@ -15,25 +17,25 @@ var colorSensorSub = [
   {
     player: "Chumbeee",
     color: { r: 136, g:20, b: 45 },
+    spawn: "PIG",
+    spawn_color: "8",
+    last: false,
+    tag: "pig"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 250, g:222, b: 445 },
     spawn: "SHEEP",
     spawn_color: "8",
     last: false,
     tag: "sheep"
   },
   {
-    player: "Nurdy",
-    color: { r: 136, g:20, b: 45 },
-    spawn: "SHEEP",
-    spawn_color: "8",
-    last: false,
-    tag: "sheep"
-  },
-  {
-    player: "Nurdy",
+    player: "Chumbeee",
     color: { r: 83, g:75, b: 35 },
-    spawn: "SQUID",
+    spawn: "CREEPER",
     last: false,
-    tag: "SQUID"
+    tag: "creeper"
   }
 ];
 
@@ -59,9 +61,10 @@ client.onMessageArrived( function(topic,message){
   try {
 
     parseColors(msgText, function(r,g,b) {
-      console.log(r);
-      console.log(g);
-      console.log(b);
+      // console.log(r);
+      // console.log(g);
+      // console.log(b);
+      console.log("r:" + r + ", g:" + g + ", b:" + b)
 
       // check each subscriber to this sensor
       for(x=0;x < colorSensorSub.length; x++){
@@ -83,8 +86,8 @@ client.onMessageArrived( function(topic,message){
                   if(player) {
                     var location = player.location;
                     // location.setZ(location.getZ() + 70);
-                    //spawnEntity(sub.spawn, location, sub.spawn_color);
-                    spawn(sub.spawn, location);
+                    spawnEntity(sub.spawn, location, sub.spawn_color);
+                    // spawn(sub.spawn, location);
                     console.log(sub.player + ":" + sub.spawn + "!");
                   }
                 }
@@ -112,16 +115,44 @@ function spawnEntity(entity, location, color) {
     entityType = entityTypeFn();
   }
 
-  var Canary = Packages.net.canarymod.Canary;
-  var cmDyeColor = Packages.net.canarymod.api.DyeColor;
-  var entityFactory = Canary.factory().entityFactory;
-  var cmEntityType = Packages.net.canarymod.api.entity.EntityType;
-
-  var spawned = entityFactory.newEntity(entityType, location);
-  if(entity == "SHEEP"){
-    spawned.setColor(cmDyeColor.ORANGE); // TODO: use color to drive this color
+  var world = location.world;
+  if (__plugin.bukkit){
+    DyeColor = Packages.net.minecraft.item.EnumDyeColor;
+    var entityInstance = world.spawnEntity( location, entityType);
+    if(entity == "SHEEP"){
+      console.log(entityInstance);
+      applyColors(entityInstance, DyeColor.ORANGE); // TODO: use color to drive this color
+    }
   }
-  spawned.spawn();
+  if (__plugin.canary){
+
+    var Canary = Packages.net.canarymod.Canary;
+    var cmDyeColor = Packages.net.canarymod.api.DyeColor;
+    var entityFactory = Canary.factory().entityFactory;
+    var cmEntityType = Packages.net.canarymod.api.entity.EntityType;
+
+    var spawned = entityFactory.newEntity(entityType, location);
+    if(entity == "SHEEP"){
+      spawned.setColor(cmDyeColor.ORANGE); // TODO: use color to drive this color
+    }
+    spawned.spawn();
+  }
+}
+
+function applyColors( block, metadata ){
+  switch( block.typeId){
+  case blocks.wool.white:
+  case 35:
+  case blocks.stained_clay.white:
+  case 159:
+  case blocks.stained_glass.white:
+  case 95:
+  case blocks.stained_glass_pane.white:
+  case 160:
+  case blocks.carpet.white:
+  case 171:
+    property(block).set('color',metadata);
+  }
 }
 
 function parseColors(colors, action) {
