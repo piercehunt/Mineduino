@@ -1,4 +1,12 @@
 
+/************************************************************************
+## Frodo Color-Sensor Module
+
+* listens to colors from Arduino and tries to match them with color-actions list
+* Color Actions are associated with a player and will only activate if player is online
+* Color Actions are an array of objects with a color, player, and spawn type
+
+/************************************************************************/
 var mqtt = require('sc-mqtt'),
   spawn = require('spawn'),
   utils = require('utils'),
@@ -6,6 +14,7 @@ var mqtt = require('sc-mqtt'),
   blocks = require('blocks'),
   property = require('blockhelper').property,
   foreach = require('utils').foreach,
+  lightning = require('lightning'),
   client = mqtt.client(),
   JavaString = java.lang.String,
   last = false;
@@ -13,45 +22,17 @@ var mqtt = require('sc-mqtt'),
 client.connect();
 client.subscribe('arduino1');
 
-var colorSensorSub = [
-  {
-    player: "Chumbeee",
-    color: { r: 136, g:20, b: 45 },
-    spawn: "PIG",
-    spawn_color: "8",
-    last: false,
-    tag: "pig"
-  },
-  {
-    player: "Chumbeee",
-    color: { r: 250, g:222, b: 445 },
-    spawn: "SHEEP",
-    spawn_color: "8",
-    last: false,
-    tag: "sheep"
-  },
-  {
-    player: "Chumbeee",
-    color: { r: 83, g:75, b: 35 },
-    spawn: "CREEPER",
-    last: false,
-    tag: "creeper"
-  }
-];
+// Creates an allowance for the target color to trigger
+var delta = 15;
 
-var delta = 10;
-
-// 1. Chumbee is listening for Red to spawn sheep near his location
-// 2. When Red occurs, spawn sheep near all players
-// 3, Register Chumbee with Red and Spawn Sheep so that when red is shown it will cause spawn
-
+// listening to the mqtt protocol for colors sent from arduino
 client.onMessageArrived( function(topic,message){
   var msgText = '' + new JavaString(message.payload);
   if (topic != 'arduino1'){
     return;
   }
 
-  if(colorSensorSub.length <= 0) {
+  if(colorActions.length <= 0) {
     // Nobody wants colorsensor stuff.
     return;
   }
@@ -64,11 +45,11 @@ client.onMessageArrived( function(topic,message){
       // console.log(r);
       // console.log(g);
       // console.log(b);
-      console.log("r:" + r + ", g:" + g + ", b:" + b)
+      console.log("r:" + r + ", g:" + g + ", b:" + b);
 
       // check each subscriber to this sensor
-      for(x=0;x < colorSensorSub.length; x++){
-          var sub = colorSensorSub[x];
+      for(x=0;x < colorActions.length; x++){
+          var sub = colorActions[x];
           // Check to see if the subscriber's colors match
           if( r > sub.color.r -delta && r < sub.color.r +delta &&
               g > sub.color.g -delta && g < sub.color.g +delta &&
@@ -86,8 +67,8 @@ client.onMessageArrived( function(topic,message){
                   if(player) {
                     var location = player.location;
                     // location.setZ(location.getZ() + 70);
-                    spawnEntity(sub.spawn, location, sub.spawn_color);
-                    // spawn(sub.spawn, location);
+                    // spawnEntity(sub.spawn, location, sub.spawn_color);
+                    spawn(sub.spawn, location);
                     console.log(sub.player + ":" + sub.spawn + "!");
                   }
                 }
@@ -102,58 +83,22 @@ client.onMessageArrived( function(topic,message){
     });
   }
   catch (error){
-    // Eat any errors
+    // try {
+    //   // Eat any errors
+    //   var all = utils.players();
+    //   if(all){
+    //     var currentPlayer = all[0];
+    //     lightning(currentPlayer.location);
+    //   }
+    // }
+    // catch (e2) { /* eat error */ }
+
     console.log("Frodo: ERROR!");
     console.log(error);
   }
 });
 
-function spawnEntity(entity, location, color) {
-  var entityTypeFn, entityType;
-  if (typeof entity === 'string'){
-    entityTypeFn = entities[entity.toLowerCase()];
-    entityType = entityTypeFn();
-  }
 
-  var world = location.world;
-  if (__plugin.bukkit){
-    DyeColor = Packages.net.minecraft.item.EnumDyeColor;
-    var entityInstance = world.spawnEntity( location, entityType);
-    if(entity == "SHEEP"){
-      console.log(entityInstance);
-      applyColors(entityInstance, DyeColor.ORANGE); // TODO: use color to drive this color
-    }
-  }
-  if (__plugin.canary){
-
-    var Canary = Packages.net.canarymod.Canary;
-    var cmDyeColor = Packages.net.canarymod.api.DyeColor;
-    var entityFactory = Canary.factory().entityFactory;
-    var cmEntityType = Packages.net.canarymod.api.entity.EntityType;
-
-    var spawned = entityFactory.newEntity(entityType, location);
-    if(entity == "SHEEP"){
-      spawned.setColor(cmDyeColor.ORANGE); // TODO: use color to drive this color
-    }
-    spawned.spawn();
-  }
-}
-
-function applyColors( block, metadata ){
-  switch( block.typeId){
-  case blocks.wool.white:
-  case 35:
-  case blocks.stained_clay.white:
-  case 159:
-  case blocks.stained_glass.white:
-  case 95:
-  case blocks.stained_glass_pane.white:
-  case 160:
-  case blocks.carpet.white:
-  case 171:
-    property(block).set('color',metadata);
-  }
-}
 
 function parseColors(colors, action) {
   var r=0,g=0,b=0;
@@ -186,3 +131,89 @@ function parseColors(colors, action) {
 
   action(r,g,b);
 }
+
+var colorActions = [
+  {
+    player: "Chumbeee",
+    color: { r: 136, g:20, b: 45 },
+    spawn: "PIG",
+    spawn_color: "8",
+    last: false,
+    tag: "pig"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 254, g:204, b: 375 },
+    spawn: "SHEEP",
+    spawn_color: "8",
+    last: false,
+    tag: "sheep"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 83, g:75, b: 35 },
+    spawn: "CREEPER",
+    last: false,
+    tag: "creeper"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 52, g:52, b: 102 },
+    spawn: "SQUID",
+    spawn_color: "8",
+    last: false,
+    tag: "squid"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 255, g:255, b: 255 },
+    spawn: "SKELETON",
+    spawn_color: "8",
+    last: false,
+    tag: "skeleton"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 180, g:180, b: 180 },
+    spawn: "WOLF",
+    spawn_color: "8",
+    last: false,
+    tag: "wolf"
+  },
+  {
+    player: "Chumbeee",
+    color: { r:163, g:85, b: 82 },
+    spawn: "PIG_ZOMBIE",
+    spawn_color: "8",
+    last: false,
+    tag: "pigman"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 101, g:93, b: 83 },
+    spawn: "SLIME",
+    spawn_color: "8",
+    last: false,
+    tag: "slime"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 87, g:21, b: 23 },
+    spawn: "OCELOT",
+    spawn_color: "8",
+    last: false,
+    tag: "ocelot"
+  }
+  // {
+  //   player: "Chumbeee",
+  //   trigger: {
+  //     color: { r: 60, g:180, b: 60 }
+  //   },
+  //   action: {
+  //     spawn: "SLIME",
+  //
+  //   },
+  //   last: false,
+  //   tag: "slime"
+  // }
+];
