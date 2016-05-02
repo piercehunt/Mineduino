@@ -5,6 +5,9 @@
   TCS230_ColorPAL_match.exe color matching program.
 */
 
+// ColorPAL Sensor -> RGB -> GPIO -> Serial/USB -> Moqsuito -> MQTT -> ScriptCraft ->  Frodo plugin -> MineCraft
+// Arduino -> RGB -> GPIO -> LEDs
+
 #include <SoftwareSerial.h>
 
 const int sio = 2;			// ColorPAL connected to pin 2

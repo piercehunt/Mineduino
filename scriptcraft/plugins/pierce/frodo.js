@@ -23,7 +23,7 @@ client.connect();
 client.subscribe('arduino1');
 
 // Creates an allowance for the target color to trigger
-var delta = 15;
+var delta = 18;
 
 // listening to the mqtt protocol for colors sent from arduino
 client.onMessageArrived( function(topic,message){
@@ -61,20 +61,8 @@ client.onMessageArrived( function(topic,message){
                   continue;
                 }
 
-                // Find player in game
-                var player = utils.player(sub.player);
-                if(sub.spawn) {
-                  if(player) {
-                    var location = player.location;
-                    // location.setZ(location.getZ() + 70);
-                    // spawnEntity(sub.spawn, location, sub.spawn_color);
-                    spawn(sub.spawn, location);
-                    console.log(sub.player + ":" + sub.spawn + "!");
-                  }
-                }
-
-                // flag this subscriber so we dont duplicate this action.
-                sub.last = sub.tag;
+                // do the action as soon as possible
+                setTimeout(createColorSpawner(sub),0);
           }
           else {
             sub.last = false;
@@ -83,20 +71,29 @@ client.onMessageArrived( function(topic,message){
     });
   }
   catch (error){
-    // try {
-    //   // Eat any errors
-    //   var all = utils.players();
-    //   if(all){
-    //     var currentPlayer = all[0];
-    //     lightning(currentPlayer.location);
-    //   }
-    // }
-    // catch (e2) { /* eat error */ }
 
     console.log("Frodo: ERROR!");
     console.log(error);
   }
 });
+
+function createColorSpawner(sub) {
+  return function() { // Find player in game
+            var player = utils.player(sub.player);
+            if(sub.spawn) {
+              if(player) {
+                var location = player.location;
+                // location.setZ(location.getZ() + 70);
+                // spawnEntity(sub.spawn, location, sub.spawn_color);
+                spawn(sub.spawn, location);
+                console.log(sub.player + ":" + sub.spawn + "!");
+              }
+            }
+
+            // flag this subscriber so we dont duplicate this action.
+            sub.last = sub.tag;
+          };
+}
 
 
 
