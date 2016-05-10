@@ -200,6 +200,14 @@ var colorActions = [
     spawn_color: "8",
     last: false,
     tag: "ocelot"
+  },
+  {
+    player: "Chumbeee",
+    color: { r: 70, g:25, b: 65 },
+    spawn: "ENDERMAN",
+    spawn_color: "8",
+    last: false,
+    tag: "enderman"
   }
   // {
   //   player: "Chumbeee",
