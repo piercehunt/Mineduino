@@ -1,0 +1,9 @@
+Purpose of this project was to explore real-world interference to effect the virtual world in minecraft. In this instance I'm using color data gathered from a color sensor to spawn animals and misc. elements in to the minecraft world.
+
+Parts
+-Arduino
+-ColorPal color sensor
+-Laptop (MacbookPro)
+-Minecraft
+
+Will link a video soon demonstrating the findings and results.
